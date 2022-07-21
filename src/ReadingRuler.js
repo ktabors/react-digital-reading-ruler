@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useKeyboard, usePress } from "@react-aria/interactions";
 
+import "./ReadingRuler.css";
+
 export function ReadingRuler(props) {
   let [rulerCount, setRulerCount] = useState(0);
   let [lineHeight, setLineHeight] = useState(0);
