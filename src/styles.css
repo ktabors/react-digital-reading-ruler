@@ -1,0 +1,24 @@
+html,
+body,
+#root {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+.readingRulerWrapper {
+  position: relative;
+}
+
+.readingRulerWrapper .singleLine {
+  background-color: rebeccapurple;
+  opacity: 0.6;
+  width: 100% !important;
+  position: absolute;
+  top: 0px;
+}
+
+.readingRulerWrapper:focus,
+.readingRulerWrapper:focus-visible {
+  outline: none;
+}
