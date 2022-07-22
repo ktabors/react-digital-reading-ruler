@@ -3,8 +3,7 @@
 }
 
 .readingRulerWrapper .singleLine {
-  background-color: rebeccapurple;
-  opacity: 0.6;
+  background-color: rgb(223, 191, 0, .3);
   width: 100% !important;
   position: absolute;
   top: 0;
