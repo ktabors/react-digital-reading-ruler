@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useKeyboard, usePress } from "@react-aria/interactions";
+import { useFocus, useKeyboard, usePress } from "@react-aria/interactions";
 
 import "./ReadingRuler.css";
 
 export function ReadingRuler(props) {
   // state
+  let [rulerActive, setRulerAction] = useState(false);
   let [rulerCount, setRulerCount] = useState(0);
   let [lineHeight, setLineHeight] = useState(0);
   let [currentChild, setCurrentChild] = useState({
@@ -19,9 +20,32 @@ export function ReadingRuler(props) {
   let rulerRef = useRef();
 
   // hooks
+  let {focusProps} = useFocus({
+    onFocus: e => {
+      setRulerAction(true);
+      rulerRef.current.style.height = lineHeight;
+    },
+    onBlur: e => {
+      let childHeightPx = window
+        .getComputedStyle(wrapperRef.current.children[1], null)
+        .getPropertyValue("height");
+      let childHeight = parseInt(childHeightPx.replace("px", ""), 10);
+
+      rulerRef.current.style.height = 0;
+      rulerRef.current.style.top = 0;
+      setRulerAction(false);
+      setRulerCount(0);
+      setLineHeight(0);
+      setCurrentChild({
+        index: 1,
+        childStartPx: 0,
+        childEndPx: childHeight,
+        paddingAndMarginPx: 0
+      });
+    }
+  });
   let { keyboardProps } = useKeyboard({
     onKeyDown: (e) => {
-      console.log(`key down: ${e.key}`);
       if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
         e.preventDefault();
         moveRulerEnd();
@@ -35,9 +59,15 @@ export function ReadingRuler(props) {
     }
   });
   let { pressProps } = usePress({
+    preventFocusOnPress: true,
     onPress: (e) => {
-      console.log(`press with ${e.pointerType}`);
-      moveRulerEnd();
+      if (rulerActive) {
+        moveRulerEnd();
+      } else {
+        setRulerAction(true);
+        rulerRef.current.style.height = lineHeight;
+        wrapperRef.current.focus();
+      }
     }
   });
 
@@ -77,11 +107,16 @@ export function ReadingRuler(props) {
         .getComputedStyle(wrapperRef.current.children[currentChild.index], null)
         .getPropertyValue("margin-block-end");
       let currentChildMarginEndNumber = parseInt(currentChildMarginEnd.replace("px", ""), 10);
-      let newPadding = currentChild.paddingAndMarginPx + currentChildMarginEndNumber;
+      let nextChildMarginEnd = window
+        .getComputedStyle(wrapperRef.current.children[currentChild.index + 1], null)
+        .getPropertyValue("margin-block-end");
+      let nextChildMarginEndNumber = parseInt(nextChildMarginEnd.replace("px", ""), 10);
+      let maxMargin = nextChildMarginEndNumber > currentChildMarginEndNumber ? nextChildMarginEndNumber : currentChildMarginEndNumber;
+      let newPadding = currentChild.paddingAndMarginPx + maxMargin ;
       setCurrentChild({
         index: currentChild.index + 1,
-        childStartPx: currentChild.childEndPx + currentChildMarginEndNumber + 0,
-        childEndPx: currentChild.childEndPx + currentChildMarginEndNumber + childTwoBottomNumber,
+        childStartPx: currentChild.childEndPx + maxMargin + 0,
+        childEndPx: currentChild.childEndPx + maxMargin + childTwoBottomNumber,
         paddingAndMarginPx: newPadding
       });
 
@@ -124,7 +159,9 @@ export function ReadingRuler(props) {
       .getComputedStyle(wrapperRef.current.children[currentChild.index], null)
       .getPropertyValue("line-height");
     setLineHeight(curLineHeight);
-    rulerRef.current.style.height = curLineHeight;
+    if (rulerActive) {
+      rulerRef.current.style.height = curLineHeight;
+    }
 
     // only run this on initial load when there is childEndPx
     if (currentChild.childEndPx === 0) {
@@ -139,11 +176,12 @@ export function ReadingRuler(props) {
         paddingAndMarginPx: 0
       });
     }
-  }, [lineHeight, currentChild.index, currentChild.childStartPx, currentChild.childEndPx]);
+  }, [lineHeight, rulerActive, currentChild.index, currentChild.childStartPx, currentChild.childEndPx]);
 
   return (
-    <span
+    <div
       className="readingRulerWrapper"
+      {...focusProps}
       {...pressProps}
       {...keyboardProps}
       tabIndex="0"
@@ -151,6 +189,6 @@ export function ReadingRuler(props) {
     >
       <div className="singleLine" ref={rulerRef} />
       {props.children}
-    </span>
+    </div>
   );
 }
